@@ -1,6 +1,7 @@
 ﻿  Drawing.cpp
   Generating code
-  Previous IPDB and IOBJ mismatch, fall back to full compilation.
-  All 1465 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  118 of 1569 functions ( 7.5%) were compiled, the rest were copied from previous compilation.
+    94 functions were new in current compilation
+    43 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  D3D9 Hook ImGui.vcxproj -> C:\Users\Ruben\Downloads\D3D9-Hook-ImGui-main_CLEAN\D3D9-Hook-ImGui-main\D3D9-Hook-ImGui-main\Source\Release\D3D9 Hook ImGui.dll
+  D3D9 Hook ImGui.vcxproj -> C:\Users\Ruben\Downloads\Robots Randomizer\Release\D3D9 Hook ImGui.dll

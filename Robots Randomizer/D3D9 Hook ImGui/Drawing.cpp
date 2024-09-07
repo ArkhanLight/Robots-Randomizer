@@ -7,7 +7,7 @@
 #include <string>
 #include <cstdlib>
 #include <ctime>
-
+#include <map>
 
 BOOL Drawing::bInit = FALSE; // Status of the initialization of ImGui.
 bool Drawing::bDisplay = true; // Status of the menu display.
@@ -35,10 +35,289 @@ std::vector<Effect> activeEffects;
 // List of possible effects with their IDs and fixed durations
 std::vector<Effect> effectList = {
     {1, "Gravity Fucked", 5, 5, 1.0f},
-    {2, "Health Fucked", 12, 12, 50.0f},
-    {3, "Speedrun Mode", 18, 18, 80.0f},
-    {4, "Rodney BigBotton", 14, 14, 90.0f}
+    {2, "Health Fucked", 12, 12, 1.0f},
+    {3, "Speedrun Mode", 18, 18, 1.0f},
+    {4, "Rodney BigBotton", 14, 14, 20.0f},
+    {5, "Colorful", 20, 20, 90.0f}
 };
+
+// Helper function to handle Gravity Fucked effect
+void ApplyGravityFucked()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+        DWORD_PTR velocityZAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Z_OFFSETS, sizeof(VELOCITY_Z_OFFSETS) / sizeof(DWORD_PTR));
+        if (velocityZAddress)
+        {
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, velocityZAddress, 10.0f); // Set velocity
+                VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+        }
+        CloseHandle(hProcess);
+    }
+}
+
+void RevertGravityFucked()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+        DWORD_PTR velocityZAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Z_OFFSETS, sizeof(VELOCITY_Z_OFFSETS) / sizeof(DWORD_PTR));
+        if (velocityZAddress)
+        {
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, velocityZAddress, -50.0f); // Reset velocity to -50.0f
+                VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+        }
+        CloseHandle(hProcess);
+    }
+}
+
+
+// Helper function to handle Health Fucked effect
+void ApplyHealthFucked()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+        DWORD_PTR healthAddress = ResolvePointer(hProcess, baseAddress, HEALTH_OFFSETS, sizeof(HEALTH_OFFSETS) / sizeof(DWORD_PTR));
+        if (healthAddress)
+        {
+            const float healthValues[] = { 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f };
+            float currentHealth = ReadMemory<float>(hProcess, healthAddress);
+            int randomIndex = rand() % (sizeof(healthValues) / sizeof(healthValues[0]));
+            float newHealth = healthValues[randomIndex];
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)healthAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, healthAddress, newHealth); // Set random health
+                VirtualProtectEx(hProcess, (LPVOID)healthAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+        }
+        CloseHandle(hProcess);
+    }
+}
+
+void RevertHealthFucked()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+        DWORD_PTR healthAddress = ResolvePointer(hProcess, baseAddress, HEALTH_OFFSETS, sizeof(HEALTH_OFFSETS) / sizeof(DWORD_PTR));
+        if (healthAddress)
+        {
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)healthAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, healthAddress, 100.0f); // Reset health to 100
+                VirtualProtectEx(hProcess, (LPVOID)healthAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+        }
+        CloseHandle(hProcess);
+    }
+}
+
+
+// Helper function to handle Speedrun Mode effect
+void ApplySpeedrunMode()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD oldProtect;
+        if (VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), PAGE_READWRITE, &oldProtect))
+        {
+            WriteMemory<BYTE>(hProcess, GAME_SPEED_ADDRESS, 64); // Set speed to 64
+            VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), oldProtect, &oldProtect);
+        }
+        CloseHandle(hProcess);
+    }
+}
+
+void RevertSpeedrunMode()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD oldProtect;
+        if (VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), PAGE_READWRITE, &oldProtect))
+        {
+            WriteMemory<BYTE>(hProcess, GAME_SPEED_ADDRESS, 63); // Reset speed to 63
+            VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), oldProtect, &oldProtect);
+        }
+        CloseHandle(hProcess);
+    }
+}
+
+
+// Helper function to handle Rodney BigBotton effect
+void ApplyRodneyBigBotton()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+        DWORD_PTR scaleXAddress = ResolvePointer(hProcess, baseAddress, SCALE_X_OFFSETS, sizeof(SCALE_X_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR scaleYAddress = ResolvePointer(hProcess, baseAddress, SCALE_Y_OFFSETS, sizeof(SCALE_Y_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR scaleZAddress = ResolvePointer(hProcess, baseAddress, SCALE_Z_OFFSETS, sizeof(SCALE_Z_OFFSETS) / sizeof(DWORD_PTR));
+
+        if (scaleXAddress && scaleYAddress && scaleZAddress)
+        {
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, scaleXAddress, 3.0f);
+                WriteMemory<float>(hProcess, scaleYAddress, 3.0f);
+                WriteMemory<float>(hProcess, scaleZAddress, 3.0f);
+                VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+        }
+
+        CloseHandle(hProcess);
+    }
+}
+
+void RevertRodneyBigBotton()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+        DWORD_PTR scaleXAddress = ResolvePointer(hProcess, baseAddress, SCALE_X_OFFSETS, sizeof(SCALE_X_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR scaleYAddress = ResolvePointer(hProcess, baseAddress, SCALE_Y_OFFSETS, sizeof(SCALE_Y_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR scaleZAddress = ResolvePointer(hProcess, baseAddress, SCALE_Z_OFFSETS, sizeof(SCALE_Z_OFFSETS) / sizeof(DWORD_PTR));
+
+        if (scaleXAddress && scaleYAddress && scaleZAddress)
+        {
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, scaleXAddress, 1.0f); // Reset scale to 1.0
+                WriteMemory<float>(hProcess, scaleYAddress, 1.0f);
+                WriteMemory<float>(hProcess, scaleZAddress, 1.0f);
+                VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+        }
+
+        CloseHandle(hProcess);
+    }
+}
+
+
+// Map to store timers for each entity (keyed by entity address)
+std::map<DWORD_PTR, float> entityTimers;
+// Function to generate a random time between 0.2 and 1.0 seconds
+float GetRandomTime()
+{
+    return 0.2f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (1.0f - 0.2f)));
+}
+// Function to generate a random color between 0.0 and 1.0
+float GetRandomColor()
+{
+    return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+}
+// Function to apply a random color change to each entity individually
+void ApplyColorfulEffect(float elapsedTime)
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        // Get the base address of the entity list
+        DWORD_PTR entityListAddress = ReadMemory<DWORD_PTR>(hProcess, ENTITY_LIST_BASE_ADDRESS);
+
+        // Loop through all entities and apply individual random colors with random timers
+        while (entityListAddress != 0)
+        {
+            // Check if this entity already has a timer; if not, initialize it
+            if (entityTimers.find(entityListAddress) == entityTimers.end())
+            {
+                entityTimers[entityListAddress] = GetRandomTime();
+            }
+
+            // Decrease the timer for this entity
+            entityTimers[entityListAddress] -= elapsedTime;
+
+            // If the timer reaches 0, assign a new random color and reset the timer
+            if (entityTimers[entityListAddress] <= 0.0f)
+            {
+                float randomR = GetRandomColor();
+                float randomG = GetRandomColor();
+                float randomB = GetRandomColor();
+
+                DWORD_PTR colorRAddress = entityListAddress + COLOR_R_OFFSET;
+                DWORD_PTR colorGAddress = entityListAddress + COLOR_G_OFFSET;
+                DWORD_PTR colorBAddress = entityListAddress + COLOR_B_OFFSET;
+
+                DWORD oldProtect;
+                if (VirtualProtectEx(hProcess, (LPVOID)colorRAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+                {
+                    WriteMemory<float>(hProcess, colorRAddress, randomR);
+                    WriteMemory<float>(hProcess, colorGAddress, randomG);
+                    WriteMemory<float>(hProcess, colorBAddress, randomB);
+                    VirtualProtectEx(hProcess, (LPVOID)colorRAddress, sizeof(float), oldProtect, &oldProtect);
+                }
+
+                // Reset the timer for this entity
+                entityTimers[entityListAddress] = GetRandomTime();
+            }
+
+            // Move to the next entity (assuming +0x04 is the next entity)
+            entityListAddress = ReadMemory<DWORD_PTR>(hProcess, entityListAddress + 0x04);
+        }
+
+        CloseHandle(hProcess);
+    }
+}
+
+// Revert RGB values back to default (1.0, 1.0, 1.0) when the effect ends
+void RevertColorfulEffect()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        // Get the base address of the entity list
+        DWORD_PTR entityListAddress = ReadMemory<DWORD_PTR>(hProcess, ENTITY_LIST_BASE_ADDRESS);
+
+        // Loop through all entities and reset the RGB values to default (1.0, 1.0, 1.0)
+        while (entityListAddress != 0)
+        {
+            DWORD_PTR colorRAddress = entityListAddress + COLOR_R_OFFSET;
+            DWORD_PTR colorGAddress = entityListAddress + COLOR_G_OFFSET;
+            DWORD_PTR colorBAddress = entityListAddress + COLOR_B_OFFSET;
+
+            // Set RGB values back to 1.0 (default color)
+            DWORD oldProtect;
+            if (VirtualProtectEx(hProcess, (LPVOID)colorRAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
+            {
+                WriteMemory<float>(hProcess, colorRAddress, 1.0f);  // Default to 1.0
+                WriteMemory<float>(hProcess, colorGAddress, 1.0f);
+                WriteMemory<float>(hProcess, colorBAddress, 1.0f);
+                VirtualProtectEx(hProcess, (LPVOID)colorRAddress, sizeof(float), oldProtect, &oldProtect);
+            }
+
+            // Move to the next entity
+            entityListAddress = ReadMemory<DWORD_PTR>(hProcess, entityListAddress + 0x04);
+        }
+
+        CloseHandle(hProcess);
+    }
+}
+
+
+
+
+
 
 // Function to randomly select an effect based on the chance
 Effect SelectRandomEffectBasedOnChance()
@@ -160,7 +439,7 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
         OutputDebugString("ImGui reinitialized successfully.\n");
         bInit = TRUE;
     }
-       
+
     if (!bDisplay)
     {
         OutputDebugString("bDisplay is false, skipping rendering.\n");
@@ -197,87 +476,56 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
         accumulatedTime -= 1.0f;
     }
 
+    // Handle all effects logic (active)
+    for (auto& effect : activeEffects)
+    {
+        switch (effect.id)
+        {
+        case 1:
+            ApplyGravityFucked();
+            break;
+        case 2:
+            ApplyHealthFucked();
+            break;
+        case 3:
+            ApplySpeedrunMode();
+            break;
+        case 4:
+            ApplyRodneyBigBotton();
+            break;
+        case 5:
+            ApplyColorfulEffect(elapsedTime.count());
+            break;
+        }
+    }
+
     // Smoothly update each active effect's remaining time
+    // Handle effect expiration and reset logic
     for (auto it = activeEffects.begin(); it != activeEffects.end(); )
     {
-        it->remainingTime -= elapsedTime.count(); // Decrease by elapsed time
+        it->remainingTime -= elapsedTime.count();
         if (it->remainingTime <= 0)
         {
-            // Check if the effect being removed is "Gravity Reduced" and reset the velocity to -50.0
-            if (it->id == 1)
+            switch (it->id)
             {
-                HANDLE hProcess = GetGameProcessHandle();
-                if (hProcess)
-                {
-                    DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
-                    DWORD_PTR velocityZAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Z_OFFSETS, sizeof(VELOCITY_Z_OFFSETS) / sizeof(DWORD_PTR));
-
-                    if (velocityZAddress)
-                    {
-                        DWORD oldProtect;
-                        if (VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
-                        {
-                            WriteMemory<float>(hProcess, velocityZAddress, -50.0f);
-                            VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), oldProtect, &oldProtect);
-                        }
-                    }
-
-                    CloseHandle(hProcess);
-                }
+            case 1:
+                RevertGravityFucked();
+                break;
+            case 2:
+                RevertHealthFucked();
+                break;
+            case 3:
+                RevertSpeedrunMode();
+                break;
+            case 4:
+                RevertRodneyBigBotton();
+                break;
+            case 5:
+                RevertColorfulEffect();
+                break;
             }
 
-            // Check if the effect being removed is "Speedrun Mode" and reset the game speed to 63
-            if (it->id == 3)
-            {
-                HANDLE hProcess = GetGameProcessHandle();
-                if (hProcess)
-                {
-                    DWORD oldProtect;
-                    if (VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), PAGE_READWRITE, &oldProtect))
-                    {
-                        WriteMemory<BYTE>(hProcess, GAME_SPEED_ADDRESS, 63); // Reset speed back to 63
-                        VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), oldProtect, &oldProtect);
-                    }
-                    CloseHandle(hProcess);
-                }
-            }
-
-            if (it->id == 4)
-            {
-                HANDLE hProcess = GetGameProcessHandle();
-                if (hProcess)
-                {
-                    DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
-
-                    // Resolve the X, Y, and Z scale pointers
-                    DWORD_PTR scaleXAddress = ResolvePointer(hProcess, baseAddress, SCALE_X_OFFSETS, sizeof(SCALE_X_OFFSETS) / sizeof(DWORD_PTR));
-                    DWORD_PTR scaleYAddress = ResolvePointer(hProcess, baseAddress, SCALE_Y_OFFSETS, sizeof(SCALE_Y_OFFSETS) / sizeof(DWORD_PTR));
-                    DWORD_PTR scaleZAddress = ResolvePointer(hProcess, baseAddress, SCALE_Z_OFFSETS, sizeof(SCALE_Z_OFFSETS) / sizeof(DWORD_PTR));
-
-                    if (scaleXAddress && scaleYAddress && scaleZAddress)
-                    {
-                        DWORD oldProtect;
-                        if (VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), PAGE_READWRITE, &oldProtect) &&
-                            VirtualProtectEx(hProcess, (LPVOID)scaleYAddress, sizeof(float), PAGE_READWRITE, &oldProtect) &&
-                            VirtualProtectEx(hProcess, (LPVOID)scaleZAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
-                        {
-                            // Reset the player's scale to 1.0x
-                            WriteMemory<float>(hProcess, scaleXAddress, 1.0f);  // Reset X scale
-                            WriteMemory<float>(hProcess, scaleYAddress, 1.0f);  // Reset Y scale
-                            WriteMemory<float>(hProcess, scaleZAddress, 1.0f);  // Reset Z scale
-
-                            // Restore memory protection
-                            VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), oldProtect, &oldProtect);
-                            VirtualProtectEx(hProcess, (LPVOID)scaleYAddress, sizeof(float), oldProtect, &oldProtect);
-                            VirtualProtectEx(hProcess, (LPVOID)scaleZAddress, sizeof(float), oldProtect, &oldProtect);
-                        }
-                    }
-
-                    CloseHandle(hProcess);
-                }
-            }
-
-            it = activeEffects.erase(it); // Remove the effect if its timer has expired
+            it = activeEffects.erase(it);
         }
         else
         {
@@ -285,122 +533,7 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
         }
     }
 
-    // Handle all effects logic (active)
-    for (auto& effect : activeEffects)
-    {
-        if (effect.id == 1) // Gravity Reduced
-        {
-            // Handle Gravity Reduced effect
-            HANDLE hProcess = GetGameProcessHandle();
-            if (hProcess)
-            {
-                DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
-                DWORD_PTR velocityZAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Z_OFFSETS, sizeof(VELOCITY_Z_OFFSETS) / sizeof(DWORD_PTR));
-
-                if (velocityZAddress)
-                {
-                    DWORD oldProtect;
-                    if (VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
-                    {
-                        WriteMemory<float>(hProcess, velocityZAddress, 10.0f);  // Lock the velocity at 10.0f
-                        VirtualProtectEx(hProcess, (LPVOID)velocityZAddress, sizeof(float), oldProtect, &oldProtect);
-                    }
-                }
-
-                CloseHandle(hProcess);
-            }
-        }
-
-        if (effect.id == 2) // Health Fucked
-        {
-            // Handle Health Fucked effect
-            HANDLE hProcess = GetGameProcessHandle();
-            if (hProcess)
-            {
-                DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
-                DWORD_PTR healthAddress = ResolvePointer(hProcess, baseAddress, HEALTH_OFFSETS, sizeof(HEALTH_OFFSETS) / sizeof(DWORD_PTR));
-
-                if (healthAddress)
-                {
-                    const float healthValues[] = { 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f };
-                    static float healthTimer = 0.0f;
-                    healthTimer += elapsedTime.count();
-                    if (healthTimer >= 2.0f)
-                    {
-                        float currentHealth = ReadMemory<float>(hProcess, healthAddress);
-                        float newHealth = currentHealth;
-                        while (newHealth == currentHealth)
-                        {
-                            int randomIndex = rand() % (sizeof(healthValues) / sizeof(healthValues[0]));
-                            newHealth = healthValues[randomIndex];
-                        }
-                        DWORD oldProtect;
-                        if (VirtualProtectEx(hProcess, (LPVOID)healthAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
-                        {
-                            WriteMemory<float>(hProcess, healthAddress, newHealth);
-                            VirtualProtectEx(hProcess, (LPVOID)healthAddress, sizeof(float), oldProtect, &oldProtect);
-                        }
-                        healthTimer = 0.0f;
-                    }
-                }
-
-                CloseHandle(hProcess);
-            }
-        }
-
-        if (effect.id == 3) // Speedrun Mode
-        {
-            // Handle Speedrun Mode effect
-            HANDLE hProcess = GetGameProcessHandle();
-            if (hProcess)
-            {
-                DWORD oldProtect;
-                if (VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), PAGE_READWRITE, &oldProtect))
-                {
-                    WriteMemory<BYTE>(hProcess, GAME_SPEED_ADDRESS, 64); // Set speed to 64
-                    VirtualProtectEx(hProcess, (LPVOID)GAME_SPEED_ADDRESS, sizeof(BYTE), oldProtect, &oldProtect);
-                }
-                CloseHandle(hProcess);
-            }
-        }
-
-        if (effect.id == 4) // Rodney BigBotton (Scale Change)
-        {
-            HANDLE hProcess = GetGameProcessHandle();
-            if (hProcess)
-            {
-                // Base Address for the player scale manipulation
-                DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
-
-                // Resolve the X, Y, and Z scale pointers
-                DWORD_PTR scaleXAddress = ResolvePointer(hProcess, baseAddress, SCALE_X_OFFSETS, sizeof(SCALE_X_OFFSETS) / sizeof(DWORD_PTR));
-                DWORD_PTR scaleYAddress = ResolvePointer(hProcess, baseAddress, SCALE_Y_OFFSETS, sizeof(SCALE_Y_OFFSETS) / sizeof(DWORD_PTR));
-                DWORD_PTR scaleZAddress = ResolvePointer(hProcess, baseAddress, SCALE_Z_OFFSETS, sizeof(SCALE_Z_OFFSETS) / sizeof(DWORD_PTR));
-
-                if (scaleXAddress && scaleYAddress && scaleZAddress)
-                {
-                    DWORD oldProtect;
-                    if (VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), PAGE_READWRITE, &oldProtect) &&
-                        VirtualProtectEx(hProcess, (LPVOID)scaleYAddress, sizeof(float), PAGE_READWRITE, &oldProtect) &&
-                        VirtualProtectEx(hProcess, (LPVOID)scaleZAddress, sizeof(float), PAGE_READWRITE, &oldProtect))
-                    {
-                        // Change the player's scale
-                        WriteMemory<float>(hProcess, scaleXAddress, 3.0f);  // Scale X to 5.0x
-                        WriteMemory<float>(hProcess, scaleYAddress, 3.0f);  // Scale Y to 3.0x
-                        WriteMemory<float>(hProcess, scaleZAddress, 3.0f);  // Scale Z to 3.0x
-
-                        // Restore memory protection
-                        VirtualProtectEx(hProcess, (LPVOID)scaleXAddress, sizeof(float), oldProtect, &oldProtect);
-                        VirtualProtectEx(hProcess, (LPVOID)scaleYAddress, sizeof(float), oldProtect, &oldProtect);
-                        VirtualProtectEx(hProcess, (LPVOID)scaleZAddress, sizeof(float), oldProtect, &oldProtect);
-                    }
-                }
-
-                CloseHandle(hProcess);
-            }
-        }
-    }
-
+    // Rest of the hkEndScene rendering logic goes here
     ImGui_ImplDX9_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
@@ -455,6 +588,7 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 
     OutputDebugString("Finished rendering ImGui.\n");
 
+    // Return the original EndScene function
     return Hook::oEndScene(D3D9Device);
 }
 

@@ -5,11 +5,14 @@
 // Base address for "Robots.exe"
 constexpr DWORD_PTR PLAYER_BASE_ADDRESS = 0x003BA7C0; // Base address for player-related data
 
-// Array for health-related offsets (these are in the correct order)
+// Array for health-related offsets
 constexpr DWORD_PTR HEALTH_OFFSETS[] = { 0x5C, 0x2F8 };
 
 // Array for "Velocity Z" related offsets
 constexpr DWORD_PTR VELOCITY_Z_OFFSETS[] = { 0x118, 0x40, 0x124 };
+
+// Address where the `fstp` instruction that modifies Z velocity is located
+constexpr DWORD_PTR JUMP_VELOCITY_INSTRUCTION_ADDRESS = 0x00446B1E;
 
 // Static address for game speed (Speedrun Mode)
 constexpr DWORD_PTR GAME_SPEED_ADDRESS = 0x007AD27B;
@@ -18,6 +21,14 @@ constexpr DWORD_PTR GAME_SPEED_ADDRESS = 0x007AD27B;
 constexpr DWORD_PTR SCALE_X_OFFSETS[] = { 0xF0 };
 constexpr DWORD_PTR SCALE_Y_OFFSETS[] = { 0xF8 };
 constexpr DWORD_PTR SCALE_Z_OFFSETS[] = { 0xF4 };
+
+// Entity list base address
+constexpr DWORD_PTR ENTITY_LIST_BASE_ADDRESS = 0x007BAE3C;
+
+// Offsets for entity RGB
+constexpr DWORD_PTR COLOR_R_OFFSET = 0x4C;
+constexpr DWORD_PTR COLOR_G_OFFSET = 0x50;
+constexpr DWORD_PTR COLOR_B_OFFSET = 0x54;
 
 // Function to read memory from a specific address
 template <typename T>
