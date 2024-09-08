@@ -8,7 +8,9 @@ constexpr DWORD_PTR PLAYER_BASE_ADDRESS = 0x003BA7C0; // Base address for player
 // Array for health-related offsets
 constexpr DWORD_PTR HEALTH_OFFSETS[] = { 0x5C, 0x2F8 };
 
-// Array for "Velocity Z" related offsets
+// Offsets for player velocity
+constexpr DWORD_PTR VELOCITY_X_OFFSETS[] = { 0x118, 0x40, 0x1B8 };
+constexpr DWORD_PTR VELOCITY_Y_OFFSETS[] = { 0x118, 0x40, 0x1C0 };
 constexpr DWORD_PTR VELOCITY_Z_OFFSETS[] = { 0x118, 0x40, 0x124 };
 
 // Address where the `fstp` instruction that modifies Z velocity is located

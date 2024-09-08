@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <map>
+#include <chrono>
 
 BOOL Drawing::bInit = FALSE; // Status of the initialization of ImGui.
 bool Drawing::bDisplay = true; // Status of the menu display.
@@ -34,12 +35,13 @@ std::vector<Effect> activeEffects;
 
 // List of possible effects with their IDs and fixed durations
 std::vector<Effect> effectList = {
-    {1, "Gravity Fucked", 5, 5, 0.1f},
-    {2, "Health Fucked", 12, 12, 1.0f},
-    {3, "Speedrun Mode", 18, 18, 1.0f},
-    {4, "Rodney BigBotton", 14, 14, 1.0f},
-    {5, "Colorful", 20, 20, 1.0f},
-    {6, "Scale Entities", 15, 15, 99.0f }
+    {1, "Going Floating", 5, 5, 5.0f},
+    {2, "Health Fucked", 12, 12, 20.0f},
+    {3, "Speedrun Mode", 18, 18, 20.0f},
+    {4, "Rodney Bigbotton", 14, 14, 20.0f},
+    //{5, "Entities Color Fucked", 20, 20, 1.0f},
+    //{6, "Entities Scale Fucked", 15, 15, 1.0f},
+    {7, "Random Push", 30, 30, 20.0f}
 };
 
 // Helper function to handle Gravity Fucked effect
@@ -357,6 +359,112 @@ void RevertScaleEffect()
 }
 
 
+// Random Gravity global variables
+std::chrono::steady_clock::time_point lastGravityUpdate = std::chrono::steady_clock::now();
+float gravityInterval = 0.0f;
+bool velocityApplied = false;
+const float velocityDuration = 0.2f; // Duration of velocity change (0.2 seconds)
+// Function to generate random interval between 1 and 2 seconds
+float GetRandomGravityInterval()
+{
+    return 1.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (2.0f - 1.0f)));
+}
+// Function to generate random float between min and max
+float GetRandomFloatInRange(float min, float max)
+{
+    return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
+}
+// Function to apply a brief random velocity to the player
+void ApplyRandomGravityEffect()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+
+        // Resolve X, Y, Z velocity addresses
+        DWORD_PTR velocityXAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_X_OFFSETS, sizeof(VELOCITY_X_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR velocityYAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Y_OFFSETS, sizeof(VELOCITY_Y_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR velocityZAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Z_OFFSETS, sizeof(VELOCITY_Z_OFFSETS) / sizeof(DWORD_PTR));
+
+        if (velocityXAddress && velocityYAddress && velocityZAddress)
+        {
+            // Get current velocities
+            float currentX = ReadMemory<float>(hProcess, velocityXAddress);
+            float currentY = ReadMemory<float>(hProcess, velocityYAddress);
+            float currentZ = ReadMemory<float>(hProcess, velocityZAddress);
+
+            // Generate random velocity additions within the updated ranges
+            float randomX = GetRandomFloatInRange(-200.0f, 200.0f);
+            float randomY = GetRandomFloatInRange(-200.0f, 200.0f);
+            float randomZ = GetRandomFloatInRange(-1.0f, 10.0f);
+
+            // Apply random velocities by adding the random values to the current velocities
+            WriteMemory<float>(hProcess, velocityXAddress, currentX + randomX);
+            WriteMemory<float>(hProcess, velocityYAddress, currentY + randomY);
+            WriteMemory<float>(hProcess, velocityZAddress, currentZ + randomZ);
+
+            // Mark that velocity has been applied
+            velocityApplied = true;
+
+            // Debug output to check what values are being applied
+            printf("Applied Velocities - X: %f, Y: %f, Z: %f\n", currentX + randomX, currentY + randomY, currentZ + randomZ);
+        }
+
+        CloseHandle(hProcess);
+    }
+}
+
+// Function to reset the velocity to allow free movement
+void ResetVelocity()
+{
+    HANDLE hProcess = GetGameProcessHandle();
+    if (hProcess)
+    {
+        DWORD_PTR baseAddress = (DWORD_PTR)GetModuleHandle("Robots.exe") + PLAYER_BASE_ADDRESS;
+
+        // Resolve X, Y, Z velocity addresses
+        DWORD_PTR velocityXAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_X_OFFSETS, sizeof(VELOCITY_X_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR velocityYAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Y_OFFSETS, sizeof(VELOCITY_Y_OFFSETS) / sizeof(DWORD_PTR));
+        DWORD_PTR velocityZAddress = ResolvePointer(hProcess, baseAddress, VELOCITY_Z_OFFSETS, sizeof(VELOCITY_Z_OFFSETS) / sizeof(DWORD_PTR));
+
+        if (velocityXAddress && velocityYAddress && velocityZAddress)
+        {
+            // Get current velocities
+            float currentX = ReadMemory<float>(hProcess, velocityXAddress);
+            float currentY = ReadMemory<float>(hProcess, velocityYAddress);
+            float currentZ = ReadMemory<float>(hProcess, velocityZAddress);
+
+            // Debug output to confirm velocity reset
+            printf("Resetting Velocities\n");
+        }
+
+        CloseHandle(hProcess);
+    }
+}
+
+// Function to handle random gravity effect with interval checks
+void HandleRandomGravityEffect(float elapsedTime)
+{
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<float> timeSinceLastUpdate = currentTime - lastGravityUpdate;
+
+    // Check if it's time to apply the gravity effect again
+    if (timeSinceLastUpdate.count() >= gravityInterval)
+    {
+        ApplyRandomGravityEffect(); // Apply random gravity
+        lastGravityUpdate = currentTime;  // Reset the last update time
+        gravityInterval = GetRandomGravityInterval(); // Set next interval between 1-2 seconds
+    }
+}
+
+// Revert velocities to normal (if needed when the effect ends)
+void RevertRandomGravityEffect()
+{
+    ResetVelocity(); // Make sure velocity is reset when the effect ends
+}
+
+
 
 
 
@@ -504,7 +612,7 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
         timer--;
         if (timer < 1)
         {
-            timer = 5; // Reset the main timer when it reaches 0
+            timer = 10; // Reset the main timer when it reaches 0
 
             // Check if all effects are already active
             if (activeEffects.size() < effectList.size())
@@ -541,6 +649,9 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
         case 6:
             ApplyScaleEffect(3.0f);
             break;
+        case 7:
+            HandleRandomGravityEffect(elapsedTime.count());
+            break;
         }
     }
 
@@ -571,6 +682,10 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
             case 6:
                 RevertScaleEffect();
                 break;
+            case 7:
+                RevertRandomGravityEffect();
+                break;
+
             }
 
             it = activeEffects.erase(it);
@@ -603,20 +718,40 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 
     // Display the list of active effects on the left side of the screen
     ImGui::SetNextWindowPos(ImVec2(20, 120), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(260, 120));
+    // Remove the fixed window size to allow it to expand dynamically
+    // ImGui::SetNextWindowSize(ImVec2(260, 120));
+    // Add padding and spacing for the window
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+
+    // Start by calculating the width of the longest text entry
+    float maxTextWidth = 0.0f;
+    for (const auto& effect : activeEffects)
+    {
+        float textWidth = ImGui::CalcTextSize(effect.name.c_str()).x;  // Calculate the width of each effect name
+        if (textWidth > maxTextWidth)
+            maxTextWidth = textWidth;
+    }
+
+    // Add padding to the calculated width
+    float windowWidth = maxTextWidth + 50.0f;  // Add some extra space to account for the radial progress bar and padding
+
+    // Adjust the window size dynamically based on the longest text
+    ImGui::SetNextWindowSize(ImVec2(windowWidth, 0), ImGuiCond_Always);
+
     ImGui::Begin("Active Effects", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     for (const auto& effect : activeEffects)
     {
-        ImGui::Text("%s", effect.name.c_str());
+        ImGui::Text("%s", effect.name.c_str());  // Ensure full name is rendered
 
         // Calculate the progress for the radial timer
         float progress = effect.remainingTime / effect.totalTime;
 
         // Position for the radial timer
         ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-        ImVec2 center = ImVec2(cursorPos.x + 220, cursorPos.y - 15); // Adjusted position to align the radial timer correctly
+        ImVec2 center = ImVec2(cursorPos.x + maxTextWidth + 20, cursorPos.y - 15);  // Adjusted position to align the radial timer correctly
         float radius = 10.0f;
         float thickness = 4.0f;
 
@@ -624,10 +759,11 @@ HRESULT Drawing::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
         DrawRadialProgressBar(drawList, center, radius, thickness, progress, ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
 
         // Add spacing after each effect
-        ImGui::Dummy(ImVec2(0.0f, 25.0f)); // Adds space between list items
+        ImGui::Dummy(ImVec2(0.0f, 25.0f));  // Adds space between list items
     }
 
     ImGui::End();
+    ImGui::PopStyleVar(2);  // Pop the padding and item spacing styles
     ImGui::PopStyleColor(); // Restore original window background color
 
     ImGui::EndFrame();
